@@ -1,4 +1,4 @@
-package demo;
+package org.wding.spring.ddos;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;

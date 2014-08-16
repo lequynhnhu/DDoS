@@ -36,6 +36,7 @@ public class DDoSFilter extends OncePerRequestFilter {
 		if(currentTime > lastEvictionTime + evicationTimeInterval){
 			cache.evictExpiredElements();
 			lastEvictionTime = currentTime;
+			logger.info("eviction expired ip");
 		}
 		
 		String remoteAddr = request.getRemoteAddr();
@@ -43,32 +44,44 @@ public class DDoSFilter extends OncePerRequestFilter {
 		
 		String key = generateKey(remoteAddr, uri);
 		
-		Element element = cache.getQuiet(key);
-		if(element != null){
-			if(element.isExpired()){
-				element.resetAccessStatistics();
-				logger.info("reset statistics for " + key);
-			}else{
-				long hitCount = element.getHitCount();
-				if(hitCount++ >= MAX_HIT_COUNT_PER_IP){
-					notifyAttack(request, response);
+		if(key != null){
+			Element element = cache.getQuiet(key);
+			if(element != null){
+				if(element.isExpired()){//check if the user has been inactive for 10s
 					element.resetAccessStatistics();
-					logger.warn("suspicious access for " + key);
-					return;
+					logger.info("reset statistics for " + key);
 				}else{
-					element.updateAccessStatistics();
-					logger.info("update statistics for " + key + " , hit account:" + hitCount);
+					long hitCount = element.getHitCount();
+					if(hitCount++ >= MAX_HIT_COUNT_PER_IP){
+						notifyAttack(request, response);
+						element.updateAccessStatistics();
+						logger.warn("suspicious access for " + key);
+						return;
+					}else{
+						element.updateAccessStatistics();
+						logger.info("update statistics for " + key + " , hit account:" + hitCount);
+					}
 				}
+			}else{
+				Element newElement = new Element(key, "");
+				cache.put(newElement);
+				logger.info("new statistics for " + key);
 			}
-		}else{
-			Element newElement = new Element(key, "");
-			cache.put(newElement);
-			logger.info("new statistics for " + key);
 		}
+		
 		filterChain.doFilter(request, response);
 	}
 
+	/**
+	 * if the uri is not we want to monitor, then return null
+	 * @param remoteAddr
+	 * @param uri
+	 * @return
+	 */
 	private String generateKey(String remoteAddr, String uri) {
+		if(uri.endsWith(".js") || uri.endsWith(".css") || uri.endsWith(".jpg") || uri.endsWith(".png")){
+			return null;
+		}
 		return remoteAddr + "-" + uri;
 	}
 
