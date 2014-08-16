@@ -23,10 +23,16 @@ public class ServletInitializer extends SpringBootServletInitializer {
 		return characterEncodingFilter;
 	}
 	
+//	@Bean
+//	protected DDoSFilter ddosFilter(){
+//		DDoSFilter ddosFilter = new DDoSFilter();
+//		return ddosFilter;
+//	}
+	
 	@Bean
-	protected DDoSFilter ddosFilter(){
-		DDoSFilter ddosFilter = new DDoSFilter();
-		return ddosFilter;
+	protected CouchbaseDDoSFilter couchbaseDDoSFilter(){
+		CouchbaseDDoSFilter couchbaseDDoSFilter = new CouchbaseDDoSFilter();
+		return couchbaseDDoSFilter;
 	}
 
 }
